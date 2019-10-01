@@ -1,14 +1,6 @@
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Calendar;
 import org.apache.jena.ontology.*;
 import org.apache.jena.query.Query;
@@ -89,8 +81,6 @@ public class MovieRDF {
 		OntProperty propReleaseDate = ontologyModel.getOntProperty(movieontologyNS+"releasedate");
 		OntProperty propGenre = ontologyModel.getOntProperty(movieontologyNS+"belongsToGenre");
 		
-	//	try (BufferedReader br = new BufferedReader(new FileReader(importFile))) { 
-	//	try (BufferedReader br = new BufferedReader(new InputStreamReader (new FileInputStream(importFile),"UTF-8"))) {  
 		try (BufferedReader br = new BufferedReader(new InputStreamReader (MovieRDF.class.getResourceAsStream(importFile)))) {  
 					//For each line, adds a movie and its properties
 			while (((line = br.readLine()) != null)&&(i<=30000000)) { 
