@@ -31,9 +31,9 @@ import org.apache.jena.vocabulary.RDFS;
 public class MovieRDF {
 	
 	public static final String ontologyFile="movieontology.owl";
-	public static final String importFile = "c:\\Users\\dmedina\\Downloads\\title.basics.tsv\\new.txt";
-	//public static final String importFile = "/Users/daniel/Downloads/new.tsv";
-
+	//public static final String importFile = "c:\\Users\\dmedina\\Downloads\\title.basics.tsv\\new.txt";
+	public static final String importFile_old= "/Users/daniel/Downloads/new2.tsv";
+	public static final String importFile= "moviesIMDB.tsv";
 	/* Method for loading Ontology Model*/
 	public static OntModel loadOntology(String path) {
 		System.out.print("Loading ontology...");
@@ -90,9 +90,10 @@ public class MovieRDF {
 		OntProperty propGenre = ontologyModel.getOntProperty(movieontologyNS+"belongsToGenre");
 		
 	//	try (BufferedReader br = new BufferedReader(new FileReader(importFile))) { 
-		try (BufferedReader br = new BufferedReader(new InputStreamReader (new FileInputStream(importFile),"UTF-8"))) {  
-			//For each line, adds a movie and its properties
-			while (((line = br.readLine()) != null)&&(i<=3)) { 
+	//	try (BufferedReader br = new BufferedReader(new InputStreamReader (new FileInputStream(importFile),"UTF-8"))) {  
+		try (BufferedReader br = new BufferedReader(new InputStreamReader (MovieRDF.class.getResourceAsStream(importFile)))) {  
+					//For each line, adds a movie and its properties
+			while (((line = br.readLine()) != null)&&(i<=30000000)) { 
 				i++;
 				String[] movieProps = line.split("\t"); //Splits line in properties values
 				
@@ -137,7 +138,7 @@ public class MovieRDF {
 		System.out.println("OK"); //*/
 		
 		
-		/*/Queries
+		//Queries
 		System.out.print("Starting query...");
 		String NL = System.getProperty("line.separator");
 		String prefix1 = "PREFIX movieontology: <" + movieontologyNS + ">" + NL;
@@ -147,7 +148,7 @@ public class MovieRDF {
 		String queryString = prolog + 
 				"SELECT ?movie ?title WHERE {" + NL
 				+ "?movie a www:Movie." + NL
-				+ "?movie movieontology:belongsToGenre movieontology:Documentary." + NL
+				+ "?movie movieontology:belongsToGenre movieontology:Comedy." + NL
 				+ "?movie movieontology:title ?title." + NL
 				+ "}";
 						
@@ -158,7 +159,7 @@ public class MovieRDF {
 			System.out.println("Results: ");
 			ResultSetFormatter.out(System.out,rs,query);
 		} //*/
-		moviesModel.write(System.out,"Turtle");
+		//moviesModel.write(System.out,"Turtle");
 	}
 
 }
