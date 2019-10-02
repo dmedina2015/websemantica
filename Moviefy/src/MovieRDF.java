@@ -2,6 +2,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Calendar;
+import java.util.Map;
+
 import org.apache.jena.ontology.*;
 import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryExecution;
@@ -22,10 +24,13 @@ import org.apache.jena.vocabulary.RDFS;
 
 public class MovieRDF {
 	
+	//Create constants for data files
 	public static final String ontologyFile="movieontology.owl";
-	//public static final String importFile = "c:\\Users\\dmedina\\Downloads\\title.basics.tsv\\new.txt";
-	public static final String importFile_old= "/Users/daniel/Downloads/new2.tsv";
-	public static final String importFile= "moviesIMDB.tsv";
+	public static final String movieImportFile= "moviesIMDB.tsv";
+	public static final String ratingImportFile = "ratingsIMDB.tsv";
+	public static final String peopleImportFile = "namesIMDB.tsv";
+	public static final String principalsImportFile = "principalsIMDB.tsv";
+	
 	/* Method for loading Ontology Model*/
 	public static OntModel loadOntology(String path) {
 		System.out.print("Loading ontology...");
@@ -34,9 +39,7 @@ public class MovieRDF {
 		System.out.println("OK");
 		return ont;
 	}
-	
-	
-    	
+		
 	public static void main(String[] args) throws IOException {
 		//Set debug level
 		org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.OFF);
@@ -72,8 +75,7 @@ public class MovieRDF {
 		
 		//Insert Movies	
 		System.out.print("Importing movies...");
-		String line;
-		long i=0;
+		
 		// Load classes and properties from ontology model to link to individual movies
 		OntClass classMovie = ontologyModel.getOntClass(wwwNS+"Movie");
 		OntProperty propRuntime = ontologyModel.getOntProperty(movieontologyNS+"runtime");
@@ -81,9 +83,11 @@ public class MovieRDF {
 		OntProperty propReleaseDate = ontologyModel.getOntProperty(movieontologyNS+"releasedate");
 		OntProperty propGenre = ontologyModel.getOntProperty(movieontologyNS+"belongsToGenre");
 		
-		try (BufferedReader br = new BufferedReader(new InputStreamReader (MovieRDF.class.getResourceAsStream(importFile)))) {  
-					//For each line, adds a movie and its properties
-			while (((line = br.readLine()) != null)&&(i<=30000000)) { 
+		try (BufferedReader br = new BufferedReader(new InputStreamReader (MovieRDF.class.getResourceAsStream(movieImportFile)))) {  
+			//For each line, adds a movie and its properties
+			String line;
+			long i=0;
+			while ((line = br.readLine()) != null) { 
 				i++;
 				String[] movieProps = line.split("\t"); //Splits line in properties values
 				
@@ -120,6 +124,28 @@ public class MovieRDF {
 			System.out.println("Movies imported: " + i);
 		}
 		
+		
+		//Populate ratings
+		System.out.print("Importing ratings...");
+		try (BufferedReader br = new BufferedReader(new InputStreamReader (MovieRDF.class.getResourceAsStream(ratingImportFile)))) {  
+			//Vars declaration
+			String line;
+			long i=0;
+			
+			//Load 'IMDB Rating' property from ontology
+			OntProperty propRating = ontologyModel.getOntProperty(movieontologyNS+"imdbrating");
+			
+			//For each line, adds IMDB rating for related movie
+			while ((line = br.readLine()) != null) {
+				i++;
+				String[] ratingProps = line.split("\t"); //Splits line in properties values
+				
+				//Load individual movie from model to receive rating
+				Resource individualMovie = moviesModel.getResource(imdbNS+ratingProps[0]);
+				individualMovie.addProperty(propRating, moviesModel.createTypedLiteral(new Double(ratingProps[1])));		
+			}
+			System.out.println("OK");
+		}
 		 /*/Export movie collection in RDF
 		System.out.print("Exporting RDF...");
 		BufferedWriter writer = new BufferedWriter(new FileWriter("c:\\Users\\dmedina\\Downloads\\outputRDF.rdf"));
@@ -128,7 +154,7 @@ public class MovieRDF {
 		System.out.println("OK"); //*/
 		
 		
-		//Queries
+		/*/Queries
 		System.out.print("Starting query...");
 		String NL = System.getProperty("line.separator");
 		String prefix1 = "PREFIX movieontology: <" + movieontologyNS + ">" + NL;
@@ -149,7 +175,7 @@ public class MovieRDF {
 			System.out.println("Results: ");
 			ResultSetFormatter.out(System.out,rs,query);
 		} //*/
-		//moviesModel.write(System.out,"Turtle");
+		moviesModel.write(System.out,"Turtle");
 	}
 
 }
