@@ -1,4 +1,6 @@
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Calendar;
@@ -12,6 +14,7 @@ import org.apache.jena.query.QueryFactory;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.query.ResultSetFormatter;
 import org.apache.jena.rdf.model.*;
+import org.apache.jena.sparql.vocabulary.FOAF;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.XSD;
 import org.apache.jena.vocabulary.DC_11;
@@ -46,7 +49,7 @@ public class MovieRDF {
 		
 		//Load Movie Ontology into a OntModel
 		OntModel ontologyModel= loadOntology("movieontology.owl");
-		
+				
 		//Load NameSpaces from ontology
 		String owlNS= OWL.getURI();
 		String dcNS=DC_11.getURI();
@@ -60,6 +63,9 @@ public class MovieRDF {
 		String movieontologyNS = ontologyModel.getNsPrefixURI("movieontology");
 		String movieontology2NS = ontologyModel.getNsPrefixURI("movieontology2");
 		String imdbNS = "http://imdb.com/"; 
+		String foafNS = FOAF.getURI();
+		String dbpNS = "http://dbpedia.org/page/";
+		ontologyModel.setNsPrefix("dbp", dbpNS);
 		
 		//Create model to store movie collection
 		Model moviesModel=ModelFactory.createDefaultModel();
@@ -72,6 +78,9 @@ public class MovieRDF {
 		moviesModel.setNsPrefix("movieontology",movieontologyNS);
 		moviesModel.setNsPrefix("movieontology2", movieontology2NS);
 		moviesModel.setNsPrefix("imdb",imdbNS); // Create arbitrary NS for IMDB
+		moviesModel.setNsPrefix("foaf", foafNS);
+		moviesModel.setNsPrefix("dbo",dboNS);
+		moviesModel.setNsPrefix("dbp", dbpNS);
 		
 		//Insert Movies	
 		System.out.print("Importing movies...");
@@ -107,6 +116,7 @@ public class MovieRDF {
 				// Set release date (imdb only provides year)
 				if (!movieProps[5].contentEquals("\\N")) {
 					Calendar calendar = Calendar.getInstance();
+					calendar.clear();
 					calendar.set(new Integer(movieProps[5]), 0, 1,0,0,0); // IMDB only provides year, so all dates are 01/Jan 00h00m00s
 					individualMovie.addProperty(propReleaseDate,moviesModel.createTypedLiteral(calendar));
 					}
@@ -120,8 +130,7 @@ public class MovieRDF {
 					}
 				}
 		    }
-			System.out.println("OK");
-			System.out.println("Movies imported: " + i);
+			System.out.println("OK \t Movies imported: \t" + i);
 		}
 		
 		
@@ -144,28 +153,114 @@ public class MovieRDF {
 				Resource individualMovie = moviesModel.getResource(imdbNS+ratingProps[0]);
 				individualMovie.addProperty(propRating, moviesModel.createTypedLiteral(new Double(ratingProps[1])));		
 			}
-			System.out.println("OK");
+			System.out.println("OK \t Ratings imported: \t" + i);
 		}
-		 /*/Export movie collection in RDF
+		
+		//Populate people (actors and directors) into the model
+		System.out.print("Importing people...");
+		try (BufferedReader br = new BufferedReader(new InputStreamReader (MovieRDF.class.getResourceAsStream(peopleImportFile)))) {  
+			//Vars declaration
+			String line;
+			long i=0;
+			
+			//Create and load classes from/to ontologyModel
+			OntClass classDBOPerson = ontologyModel.getOntClass(dboNS+"Person");
+			
+			//Create and load properties
+			OntProperty propBirthName = ontologyModel.createOntProperty(dboNS+"birthName");
+			OntProperty propBirthYear = ontologyModel.createOntProperty(dboNS+"birthYear");
+			OntProperty propDeathYear = ontologyModel.createOntProperty(dboNS+"deathYear");
+			
+			//For each line, adds a Person in the model
+			while ((line = br.readLine()) != null) {
+				i++;
+				String[] peopleProps = line.split("\t"); //Splits line in properties values
+				Resource person = moviesModel.createResource(imdbNS+peopleProps[0], FOAF.Person)
+					.addProperty(RDF.type, classDBOPerson)
+					.addProperty(propBirthName, peopleProps[1])
+					.addProperty(FOAF.name, peopleProps[1]);
+				
+				if (!peopleProps[2].contentEquals("\\N")) {
+					person.addProperty(propBirthYear, moviesModel.createTypedLiteral(new Integer (peopleProps[2])));
+				}
+				if (!peopleProps[3].contentEquals("\\N")) {
+					person.addProperty(propDeathYear, moviesModel.createTypedLiteral(new Integer (peopleProps[3])));
+				}
+			}
+			System.out.println("OK \t People imported: \t" + i);
+		}
+			
+		
+		//Link people (actors and directors) to existing movies
+		System.out.print("Linking people to movies...");
+		try (BufferedReader br = new BufferedReader(new InputStreamReader (MovieRDF.class.getResourceAsStream(principalsImportFile)))) {  
+			//Vars declaration
+			String line;
+			long i=0;
+			
+			//Create and load classes from/to ontologyModel
+			OntClass classActor = ontologyModel.getOntClass(dboNS+"Actor");
+			OntClass classFilmDirector = ontologyModel.createClass(dbpNS+"Film_Director");
+			
+			//Create and load properties
+			OntProperty propIsActorIn = ontologyModel.getOntProperty(movieontologyNS+"isActorIn");
+			OntProperty propHasActor = ontologyModel.getOntProperty(movieontologyNS+"hasActor");
+			OntProperty propIsDirectorOf = ontologyModel.getOntProperty(movieontologyNS+"isDirectorOf");
+			OntProperty propHasDirector = ontologyModel.getOntProperty(movieontologyNS+"hasDirector");
+			
+			//Variable outside loop
+			String [] principalsProps;
+			Resource movie;
+			Resource person;
+		
+			//For each line, link a Person to a Movie
+			while ((line = br.readLine()) != null) {
+				i++;
+				principalsProps = line.split("\t"); //Splits line in properties values
+				movie = moviesModel.getResource(imdbNS+principalsProps[0]);
+				person = moviesModel.getResource(imdbNS+principalsProps[2]);
+				if (principalsProps[3].equals("director")){
+					movie.addProperty(propHasDirector, person);
+					person.addProperty(propIsDirectorOf, movie);
+				}
+				else {
+					movie.addProperty(propHasActor, person);
+					person.addProperty(propIsActorIn, movie);
+				}
+				//if (i%1000==0)System.out.println(i);
+			}
+			System.out.println("OK \t Links imported: \t" + i);
+		}
+		
+		/*/Export movie collection in RDF
 		System.out.print("Exporting RDF...");
-		BufferedWriter writer = new BufferedWriter(new FileWriter("c:\\Users\\dmedina\\Downloads\\outputRDF.rdf"));
-		moviesModel.write(writer,"RDF/Xml");
+		BufferedWriter writer = new BufferedWriter(new FileWriter("c:\\Users\\dmedina\\Downloads\\outputIMDB.rdf"));
+		moviesModel.write(writer,"Turtle");
 		writer.close();
 		System.out.println("OK"); //*/
 		
 		
-		/*/Queries
+		//Queries
 		System.out.print("Starting query...");
 		String NL = System.getProperty("line.separator");
 		String prefix1 = "PREFIX movieontology: <" + movieontologyNS + ">" + NL;
 		String prefix2 = "PREFIX www: <" + wwwNS + ">" +NL;
 		String prefix3 = "PREFIX imdb: <" + imdbNS + ">" +NL;
-		String prolog = prefix1 + prefix2 + prefix3;
+		String prefix4 = "PREFIX foaf: <" + foafNS + ">" +NL;
+		String prefix5 = "PREFIX xsd: <" + xsdNS + ">" + NL;
+		String prolog = prefix1 + prefix2 + prefix3 + prefix4 + prefix5;
 		String queryString = prolog + 
-				"SELECT ?movie ?title WHERE {" + NL
+				"SELECT ?movie ?title ?runtime WHERE {" + NL
 				+ "?movie a www:Movie." + NL
-				+ "?movie movieontology:belongsToGenre movieontology:Comedy." + NL
-				+ "?movie movieontology:title ?title." + NL
+				//+ "?movie movieontology:belongsToGenre movieontology:Comedy." + NL
+				//+ "?movie movieontology:title ?title." + NL
+				+ "?movie movieontology:hasActor ?actor1 ." + NL
+				+ "?actor1 foaf:name \"Keanu Reeves\" ." + NL
+				+ "?movie movieontology:hasActor ?actor2 ." + NL
+				+ "?actor2 foaf:name \"Laurence Fishburne\" ." + NL
+				+ "?movie movieontology:title ?title ." + NL
+				+ "?movie movieontology:runtime ?runtime ." + NL
+			//	+ "?movie movieontology:belongsToGenre ?genre ." + NL
 				+ "}";
 						
 		Query query = QueryFactory.create(queryString);
@@ -175,7 +270,7 @@ public class MovieRDF {
 			System.out.println("Results: ");
 			ResultSetFormatter.out(System.out,rs,query);
 		} //*/
-		moviesModel.write(System.out,"Turtle");
+		//moviesModel.write(System.out,"Turtle");
 	}
 
 }
