@@ -232,9 +232,10 @@ public class MovieRDF {
 			System.out.println("OK \t Links imported: \t" + i);
 		}
 		
-		/*/Export movie collection in RDF
+		//Export movie collection in RDF
 		System.out.print("Exporting RDF...");
-		BufferedWriter writer = new BufferedWriter(new FileWriter("c:\\Users\\dmedina\\Downloads\\outputIMDB.rdf"));
+	//	BufferedWriter writer = new BufferedWriter(new FileWriter("c:\\Users\\dmedina\\Downloads\\outputIMDB.rdf"));
+		BufferedWriter writer = new BufferedWriter(new FileWriter("/Users/daniel/Downloads/outputIMDB.ttl"));
 		moviesModel.write(writer,"Turtle");
 		writer.close();
 		System.out.println("OK"); //*/
@@ -255,9 +256,9 @@ public class MovieRDF {
 				//+ "?movie movieontology:belongsToGenre movieontology:Comedy." + NL
 				//+ "?movie movieontology:title ?title." + NL
 				+ "?movie movieontology:hasActor ?actor1 ." + NL
-				+ "?actor1 foaf:name \"Keanu Reeves\" ." + NL
-				+ "?movie movieontology:hasActor ?actor2 ." + NL
-				+ "?actor2 foaf:name \"Laurence Fishburne\" ." + NL
+				+ "?actor1 foaf:name \"Laura Dern\" ." + NL
+				+ "?movie movieontology:hasDirector ?director ." + NL
+				+ "?director foaf:name \"Steven Spielberg\" ." + NL
 				+ "?movie movieontology:title ?title ." + NL
 				+ "?movie movieontology:runtime ?runtime ." + NL
 			//	+ "?movie movieontology:belongsToGenre ?genre ." + NL
