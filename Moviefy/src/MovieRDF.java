@@ -33,6 +33,7 @@ public class MovieRDF {
 	public static final String ratingImportFile = "ratingsIMDB.tsv";
 	public static final String peopleImportFile = "namesIMDB.tsv";
 	public static final String principalsImportFile = "principalsIMDB.tsv";
+	public static final String akasImportFile = "akas(US+BR)IMDB.tsv";
 	
 	/* Method for loading Ontology Model*/
 	public static OntModel loadOntology(String path) {
@@ -107,8 +108,8 @@ public class MovieRDF {
 				individualMovie.addProperty(RDF.type, classMovie);
 				
 				//Set Title
-				individualMovie.addProperty(propTitle,moviesModel.createTypedLiteral(new String(movieProps[2])))
-					.addProperty(DCTerms.title,moviesModel.createTypedLiteral(new String(movieProps[2])));
+				individualMovie.addProperty(propTitle,moviesModel.createTypedLiteral(new String(movieProps[2])));
+				//	.addProperty(DCTerms.title,moviesModel.createTypedLiteral(new String(movieProps[2])));
 				if (!movieProps[7].contentEquals("\\N"))
 					individualMovie.addProperty(propRuntime,moviesModel.createTypedLiteral(new Integer(movieProps[7])));
 					String s = individualMovie.getProperty(propTitle).toString();
@@ -133,6 +134,27 @@ public class MovieRDF {
 			System.out.println("OK \t Movies imported: \t" + i);
 		}
 		
+		//Populate AKAs
+		System.out.print("Importing AKAs...");
+		try (BufferedReader br = new BufferedReader(new InputStreamReader (MovieRDF.class.getResourceAsStream(akasImportFile)))) {  
+			//Vars declaration
+			String line;
+			long i=0;
+			
+			//Load 'Title' property from ontology
+			//OntProperty propTitle = ontologyModel.getOntProperty(movieontologyNS+"title");
+			
+			//For each line, adds region-specific title
+			while ((line = br.readLine()) != null) {
+				i++;
+				String[] akaProps = line.split("\t"); //Splits line in properties values
+				
+				//Load individual movie from model to receive AKA
+				Resource individualMovie = moviesModel.getResource(imdbNS+akaProps[0]);
+				individualMovie.addProperty(propTitle, ResourceFactory.createLangLiteral(akaProps[1], akaProps[2]));		
+			}
+			System.out.println("OK \t AKAs imported: \t" + i);
+		}
 		
 		//Populate ratings
 		System.out.print("Importing ratings...");
