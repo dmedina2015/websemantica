@@ -48,13 +48,13 @@ public class QuerySparqlServer {
 	}
 	
 	
-	public static Resource movieFromTitle(String movieName){
+	public static Resource movieFromTitle(String movieName, String lang){
 		String queryString = 
 				"PREFIX : <http://www.movieontology.org/2009/11/09/movieontology.owl#>\n" + 
 				"PREFIX mo: <http://www.movieontology.org/2009/10/01/movieontology.owl#>\n" +  
 				"SELECT ?movie \n" + 
 				"WHERE {\n" + 
-				"  ?movie mo:title \"" + movieName + "\".\n" +
+				"  ?movie mo:title \"" + movieName + "\"" + lang + " .\n" +
 				"}\n" +
 				"LIMIT 1";
         Query query = QueryFactory.create(queryString) ;
@@ -85,7 +85,9 @@ public class QuerySparqlServer {
 		
 		List<String> filmes = loadViewedMovies("/Users/daniel/Downloads/NetflixViewingHistory.csv");
 		filmes.forEach((movieTitle) -> {
-			Resource movie = movieFromTitle(movieTitle);
+			Resource movie = movieFromTitle(movieTitle,"");
+			if (movie==null) movie = movieFromTitle(movieTitle,"@BR"); //If doesnt find original title, try portuguese.
+			if (movie==null) movie = movieFromTitle(movieTitle,"@US"); //If doesnt find portuguese, try english.
 			if (movie!=null) user.addProperty(propView, movie);
 		});
 		return m;
@@ -189,10 +191,12 @@ public class QuerySparqlServer {
         return directors;
 	}
 	
-	public static List<Resource> queryMoviesByGenres(Model m,List<Resource> topGenres){
+	public static List<Resource> queryMoviesByGenres(Model m,List<Resource> topGenres, List<Resource> topActors){
 		String topGenre1 = "mo:" + topGenres.get(0).getLocalName();
 		String topGenre2 = topGenre1;
 		String topGenre3 = topGenre1;
+		
+		String topActor1 = "imdb:" + topActors.get(1).getLocalName();
 		
 		if(topGenres.size()>1) topGenre2 = "mo:" + topGenres.get(1).getLocalName();
 		if(topGenres.size()>2) topGenre3 = "mo:" + topGenres.get(2).getLocalName();
@@ -203,16 +207,19 @@ public class QuerySparqlServer {
 				+ "PREFIX mvfyRes: <http://movify.com/resources/> \n"
 				+ "PREFIX imdb: <http://imdb.com/> \n"
 				
-				+ "SELECT DISTINCT ?movie ?movietitle WHERE{ \n"
-				+ " ?movie mo:belongsToGenre " + topGenre1 + "," + topGenre2 + "," + topGenre3 + ".\n"
+				+ "SELECT DISTINCT ?movie ?movietitle ?releaseyear WHERE{ \n"
+				+ " ?movie mo:belongsToGenre " + topGenre1 + "," + topGenre2 + /*"," +  topGenre3 +*/ ".\n"
+				+ " ?movie mo:hasActor " + topActor1 +". \n"
 				+ " ?movie mo:title ?movietitle .\n"
 				+ " ?movie mo:releasedate ?date. \n"
-				+ " FILTER (YEAR(?date)>2000) \n"
+				+ " BIND (YEAR(?date) as ?releaseyear) \n"
+				+ " FILTER (?releaseyear > 2000) \n"
 				+ " FILTER (LANG(?movietitle)=\"BR\") \n"
 				+ "}"
-				+ "	GROUP BY ?movie ?movietitle\n"
+				+ "	GROUP BY ?movie ?movietitle ?releaseyear \n"
+				+ " ORDER BY DESC(?releaseyear) \n"
 				+ "	LIMIT 10";
-		System.out.println(queryString);
+		//System.out.println(queryString);
 		List<Resource> suggestedMovies = new ArrayList<>();
         Query query = QueryFactory.create(queryString) ;
         ResultSet results = null;
@@ -232,26 +239,26 @@ public class QuerySparqlServer {
 		org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.OFF);
 		
 		Model m = buildViewingModel("Daniel Medina");
-		m.write(System.out,"Turtle");
+		//m.write(System.out,"Turtle");
 		
 		List<Resource> g = queryTopGenres(m);
 		
 		g.forEach((genre)->{
-			System.out.println(genre.getURI());
+			//System.out.println(genre.getURI());
 		});
 		
 		List<Resource> a = queryTopActors(m);
 		a.forEach((actor)->{
-			System.out.println(actor.getURI());
+			//System.out.println(actor.getURI());
 		});
 		
 		List<Resource> d = queryTopDirectors(m);
 		d.forEach((director)->{
-			System.out.println(director.getURI());
+			//System.out.println(director.getURI());
 		});
 		
-		List<Resource> outMovies = queryMoviesByGenres(m,g);
-		d.forEach((outMovie)->{
+		List<Resource> outMovies = queryMoviesByGenres(m,g,a);
+		outMovies.forEach((outMovie)->{
 			System.out.println(outMovie.getURI());
 		});
 	}
