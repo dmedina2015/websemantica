@@ -1,0 +1,19 @@
+PREFIX mo: <http://www.movieontology.org/2009/10/01/movieontology.owl#> 
+PREFIX mvfyOnt: <http://moviefy.com/ontology/> 
+PREFIX mvfyRes: <http://movify.com/resources/> 
+PREFIX imdb: <http://imdb.com/> 
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+SELECT DISTINCT * WHERE{
+  {
+    SELECT ?movie WHERE{
+      ?movie mo:belongsToGenre mo:Action, mo:Drama.
+      ?movie mo:hasActor ?actor1.
+      VALUES ?name {"Sandra Bullock" "Keanu Reeves"}
+      ?actor1 foaf:name ?name.
+    }
+  }
+   
+}
+ORDER BY DESC(?rating)
+

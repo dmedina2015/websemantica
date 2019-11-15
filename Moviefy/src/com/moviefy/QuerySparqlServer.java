@@ -1,3 +1,4 @@
+package com.moviefy;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -60,7 +61,22 @@ public class QuerySparqlServer {
 				"SELECT ?movie \n" + 
 				"WHERE {\n" + 
 				"  ?movie mo:title \"" + movieName + "\"" + lang + " .\n" +
+				"  ?movie mo:releasedate ?date. \n" +
+				"  BIND (YEAR(?date) as ?year). \n" +
 				"}\n" +
+				"ORDER BY DESC(?year) \n" +
+				"LIMIT 1";
+		queryString = 
+				"PREFIX : <http://www.movieontology.org/2009/11/09/movieontology.owl#>\n" + 
+				"PREFIX mo: <http://www.movieontology.org/2009/10/01/movieontology.owl#>\n" +  
+				"SELECT ?movie \n" + 
+				"WHERE {\n" + 
+				"  VALUES ?titles { \"" + movieName + "\" \"" + movieName + "\"@EN \"" + movieName + "\"@BR } \n" +
+				"  ?movie mo:title ?titles.\n" +
+				"  ?movie mo:releasedate ?date. \n" +
+				"  BIND (YEAR(?date) as ?year). \n" +
+				"}\n" +
+				"ORDER BY DESC(?year) \n" +
 				"LIMIT 1";
         Query query = QueryFactory.create(queryString) ;
         ResultSet results = null;
@@ -90,8 +106,8 @@ public class QuerySparqlServer {
 		
 		viewedTitles.forEach((movieTitle) -> {
 			Resource movie = movieFromTitle(movieTitle,"");
-			if (movie==null) movie = movieFromTitle(movieTitle,"@BR"); //If doesnt find original title, try portuguese.
-			if (movie==null) movie = movieFromTitle(movieTitle,"@US"); //If doesnt find portuguese, try english.
+			//if (movie==null) movie = movieFromTitle(movieTitle,"@BR"); //If doesnt find original title, try portuguese.
+			//if (movie==null) movie = movieFromTitle(movieTitle,"@US"); //If doesnt find portuguese, try english.
 			if (movie!=null) user.addProperty(propView, movie);
 		});
 		return m;
@@ -221,7 +237,7 @@ public class QuerySparqlServer {
         return directors;
 	}
 	
-	public static LinkedHashMap<String,String> queryMoviesByPreferences(List<Resource> topGenres, List<Resource> topActors, List <Resource> topDirectors, int minorYear){
+	public static LinkedHashMap<String,List<String>> queryMoviesByPreferences(List<Resource> topGenres, List<Resource> topActors, List <Resource> topDirectors, int minorYear){
 		//Define Top Genres Strings
 		AtomicReference<String> genres = new AtomicReference<>("");
 		AtomicReference<String> actors = new AtomicReference<>("");
@@ -252,7 +268,7 @@ public class QuerySparqlServer {
 				+ "PREFIX imdb: <http://imdb.com/> \n";
 		
 		String querySelect =
-			  "SELECT DISTINCT ?movie ?titleStr ?year ?rating WHERE{ \n"
+			  "SELECT DISTINCT ?movie ?titleStr ?year ?rating ?runtime ?thumbnail WHERE{ \n"
 			+ "	{ \n"
 			+ "		SELECT ?movie WHERE{\n"
 			+ "			?movie mo:belongsToGenre ?genre. \n"
@@ -270,7 +286,9 @@ public class QuerySparqlServer {
 			+ "			VALUES ?director { " + directors + " } \n"
 			+ "		} \n"
 			+ "	} \n"
+			+ " OPTIONAL {?movie mo:hasThumbnail ?thumbnail.} \n"
 			+ "	?movie mo:imdbrating ?rating. \n"
+			+ " ?movie mo:runtime ?runtime. \n"
 			+ "	?movie mo:releasedate ?date. \n"
 			+ "	?movie mo:title ?title. \n"
 			+ " BIND(YEAR(?date) as ?year).\n"
@@ -281,31 +299,35 @@ public class QuerySparqlServer {
 			+ "	ORDER BY DESC(?rating) \n";
 			
 		//System.out.println(queryString);
-		LinkedHashMap <String,String> suggestedMovies = new LinkedHashMap<String,String>();
+		LinkedHashMap <String,List<String>> suggestedMovies = new LinkedHashMap<String,List<String>>();
         Query query = QueryFactory.create(queryPreambule+querySelect) ;
         ResultSet results = null;
         
-        try (QueryExecution qexec = QueryExecutionFactory.sparqlService("http://moviefy.ddns.net:3030/imdb/sparql", query)){         	results = qexec.execSelect();
+        try (QueryExecution qexec = QueryExecutionFactory.sparqlService("http://moviefy.ddns.net:3030/imdb/sparql", query)){         	
+        	results = qexec.execSelect();
         	//ResultSetFormatter.out(System.out,results,query);
         	while (results.hasNext()) {
         		QuerySolution nextSolution = results.next();
-        		suggestedMovies.put(nextSolution.get("movie").toString().replaceAll("http://imdb.com/", "imdb:"),
-        				nextSolution.get("titleStr").toString() + "|" +
-        				nextSolution.get("year").toString().substring(0, 4) + "|" +
-        				nextSolution.get("rating").toString().substring(0, 3));   
+        		List<String> movieParameters = new ArrayList<String>();
+        		movieParameters.add(nextSolution.get("titleStr").toString());
+        		movieParameters.add(nextSolution.get("year").toString().substring(0, 4));
+        		movieParameters.add(nextSolution.get("runtime").toString().substring(0, nextSolution.get("runtime").toString().indexOf("^")));
+        		movieParameters.add(nextSolution.get("rating").toString().substring(0, 3));
+        		if(nextSolution.get("thumbnailBR")!=null) movieParameters.add(nextSolution.get("thumbnail").toString());
+        		suggestedMovies.put(nextSolution.get("movie").toString().replaceAll("http://imdb.com/", "imdb:"),movieParameters);   
         	}
         }
         return suggestedMovies;
 	}
 	
 	
-	public static LinkedHashMap<String,String> getSuggestions(String userName, List<String> viewedTitles, int maxGenres, int maxActors, int maxDirectors) throws IOException {
+	public static LinkedHashMap<String,List<String>> getSuggestions(String userName, List<String> viewedTitles, int maxGenres, int maxActors, int maxDirectors) throws IOException {
 		Model m = buildViewingModel(userName,viewedTitles);
 		List<String> moviesViewed = queryViewedMovies(m);
 		List<Resource> g = queryTopGenres(m, maxGenres);
 		List<Resource> a = queryTopActors(m, maxActors);
 		List<Resource> d = queryTopDirectors(m, maxDirectors);
-		LinkedHashMap<String,String> outMovies = queryMoviesByPreferences(g,a,d, 2010);
+		LinkedHashMap<String,List<String>> outMovies = queryMoviesByPreferences(g,a,d, 2010);
 	
 		moviesViewed.forEach(viewed ->{
 			outMovies.remove(viewed);
@@ -320,9 +342,9 @@ public class QuerySparqlServer {
 		
 		//Load viewed titles from CSV
 		List<String> viewedTitles = loadViewedTitles("/Users/daniel/Downloads/NetflixViewingHistory.csv");
-		
+
 		//Call for suggestions
-		LinkedHashMap<String,String> suggestions = getSuggestions("Daniel Medina",viewedTitles,3,5,5);
+		LinkedHashMap<String,List<String>> suggestions = getSuggestions("Daniel Medina",viewedTitles,3,5,5);
 		
 		//Print Suggestions
 		suggestions.forEach((movieKey,movieData) ->{

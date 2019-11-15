@@ -1,0 +1,41 @@
+PREFIX mo: <http://www.movieontology.org/2009/10/01/movieontology.owl#> 
+PREFIX mvfyOnt: <http://moviefy.com/ontology/> 
+PREFIX mvfyRes: <http://movify.com/resources/> 
+PREFIX imdb: <http://imdb.com/> 
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+SELECT DISTINCT * WHERE{
+  {
+    SELECT ?movie ?title ?rating WHERE{
+      ?movie mo:hasActor ?actor1.
+      ?actor1 foaf:name "Keanu Reeves".
+      ?movie mo:releasedate ?date.
+      ?movie mo:title ?title.
+      ?movie mo:imdbrating ?rating.
+      
+      BIND (YEAR(?date) as ?releaseyear)
+      FILTER (?releaseyear > 2000)
+      FILTER (LANG(?title)="BR")
+    }
+    ORDER BY DESC(?rating)
+    LIMIT10
+  }
+  UNION
+  {
+    SELECT ?movie ?title ?rating WHERE{
+      ?movie mo:hasActor ?actor1.
+      ?actor1 foaf:name "Sandra Bullock".
+      ?movie mo:releasedate ?date.
+      ?movie mo:title ?title.
+      ?movie mo:imdbrating ?rating.
+      
+      BIND (YEAR(?date) as ?releaseyear)
+      FILTER (?releaseyear > 2000)
+      FILTER (LANG(?title)="BR")
+    }
+    ORDER BY DESC(?rating)
+    LIMIT 10
+  }
+}
+ORDER BY DESC(?rating)
+
