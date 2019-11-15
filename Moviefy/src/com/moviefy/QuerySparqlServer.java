@@ -14,6 +14,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Resources;
 
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryExecutionFactory;
@@ -25,8 +32,17 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdfconnection.RDFConnectionFuseki;
+import org.apache.jena.rdfconnection.RDFConnectionRemoteBuilder;
+import org.apache.jena.riot.web.HttpOp;
 import org.apache.jena.sparql.vocabulary.FOAF;
+import org.apache.jena.update.UpdateAction;
+import org.apache.jena.update.UpdateExecutionFactory;
+import org.apache.jena.update.UpdateFactory;
+import org.apache.jena.update.UpdateProcessor;
+import org.apache.jena.update.UpdateRequest;
 import org.apache.jena.vocabulary.RDF;
+
 
 public class QuerySparqlServer {
 	
@@ -237,6 +253,35 @@ public class QuerySparqlServer {
         return directors;
 	}
 	
+	
+	public static boolean insertThumbnailTriple(String movie, String thumbURL){
+		String queryString = 
+				 "PREFIX mo: <http://www.movieontology.org/2009/10/01/movieontology.owl#> \n"
+				+ "PREFIX mvfyOnt: <http://moviefy.com/ontology/> \n"
+				+ "PREFIX mvfyRes: <http://movify.com/resources/> \n"
+				+ "PREFIX imdb: <http://imdb.com/> \n"
+				+ "PREFIX foaf: <"+FOAF.getURI()+"> \n"
+				
+				+ "INSERT DATA { " + movie + " mo:hasThumbnail \"" + thumbURL + "\" }";
+
+		
+		CredentialsProvider credsProvider = new BasicCredentialsProvider();
+		Credentials credentials = new UsernamePasswordCredentials("admin", "JenaUnicamp@2019");
+		credsProvider.setCredentials(AuthScope.ANY, credentials);
+		HttpClient httpclient = HttpClients.custom()
+		    .setDefaultCredentialsProvider(credsProvider)
+		    .build();
+		HttpOp.setDefaultHttpClient(httpclient);
+		
+		
+		UpdateProcessor upp = UpdateExecutionFactory.createRemote(
+				UpdateFactory.create(queryString),
+				"http://moviefy.ddns.net:3030/imdb/update",httpclient);
+		upp.execute();
+		
+        return true;
+	}
+	
 	public static LinkedHashMap<String,List<String>> queryMoviesByPreferences(List<Resource> topGenres, List<Resource> topActors, List <Resource> topDirectors, int minorYear){
 		//Define Top Genres Strings
 		AtomicReference<String> genres = new AtomicReference<>("");
@@ -313,7 +358,7 @@ public class QuerySparqlServer {
         		movieParameters.add(nextSolution.get("year").toString().substring(0, 4));
         		movieParameters.add(nextSolution.get("runtime").toString().substring(0, nextSolution.get("runtime").toString().indexOf("^")));
         		movieParameters.add(nextSolution.get("rating").toString().substring(0, 3));
-        		if(nextSolution.get("thumbnailBR")!=null) movieParameters.add(nextSolution.get("thumbnail").toString());
+        		if(nextSolution.get("thumbnail")!=null) movieParameters.add(nextSolution.get("thumbnail").toString());
         		suggestedMovies.put(nextSolution.get("movie").toString().replaceAll("http://imdb.com/", "imdb:"),movieParameters);   
         	}
         }
@@ -332,13 +377,12 @@ public class QuerySparqlServer {
 		moviesViewed.forEach(viewed ->{
 			outMovies.remove(viewed);
 		});
-		
 		return outMovies;
 	}
 
 	public static void main(String[] args) throws IOException {
 		//Set debug level
-		org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.OFF);
+		//org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.OFF);
 		
 		//Load viewed titles from CSV
 		List<String> viewedTitles = loadViewedTitles("/Users/daniel/Downloads/NetflixViewingHistory.csv");

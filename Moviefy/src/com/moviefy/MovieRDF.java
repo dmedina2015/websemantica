@@ -47,7 +47,7 @@ public class MovieRDF {
 		
 	public static void main(String[] args) throws IOException {
 		//Set debug level
-		org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.OFF);
+		//org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.OFF);
 		
 		//Load Movie Ontology into a OntModel
 		OntModel ontologyModel= loadOntology("movieontology.owl");
