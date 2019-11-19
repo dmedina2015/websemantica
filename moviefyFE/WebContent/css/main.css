@@ -4,6 +4,10 @@ body {
   background: #525152;
 }
 
+.center {
+  text-align: center;
+}
+
 /*--- navigation bar ---*/
 
 .navbar {
@@ -39,6 +43,10 @@ body {
   position: relative;
 }
 
+.img {
+	width: 100%;
+}
+
 .overlay {
   position: absolute;
   min-height: 100%;
@@ -61,8 +69,8 @@ body {
 }
 .description p {
   color: #fff;
-  font-size: 1.3rem;
-  line-height: 1.5;
+  font-size: 1.2rem;
+  line-height: 1.2;
 }
 
 
@@ -75,17 +83,6 @@ input[type=text] {
 
 input[type=text]:focus {
     border-color:#333;
-}
-
-
-
-input[type=submit] {
-    padding:5px 15px; 
-    background:#ccc; 
-    border:0 none;
-    cursor:pointer;
-    -webkit-border-radius: 5px;
-    border-radius: 5px; 
 }
 
 input[type=file] {

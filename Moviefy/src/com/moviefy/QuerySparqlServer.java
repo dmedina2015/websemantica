@@ -76,17 +76,6 @@ public class QuerySparqlServer {
 				"PREFIX mo: <http://www.movieontology.org/2009/10/01/movieontology.owl#>\n" +  
 				"SELECT ?movie \n" + 
 				"WHERE {\n" + 
-				"  ?movie mo:title \"" + movieName + "\"" + lang + " .\n" +
-				"  ?movie mo:releasedate ?date. \n" +
-				"  BIND (YEAR(?date) as ?year). \n" +
-				"}\n" +
-				"ORDER BY DESC(?year) \n" +
-				"LIMIT 1";
-		queryString = 
-				"PREFIX : <http://www.movieontology.org/2009/11/09/movieontology.owl#>\n" + 
-				"PREFIX mo: <http://www.movieontology.org/2009/10/01/movieontology.owl#>\n" +  
-				"SELECT ?movie \n" + 
-				"WHERE {\n" + 
 				"  VALUES ?titles { \"" + movieName + "\" \"" + movieName + "\"@EN \"" + movieName + "\"@BR } \n" +
 				"  ?movie mo:title ?titles.\n" +
 				"  ?movie mo:releasedate ?date. \n" +
@@ -122,10 +111,9 @@ public class QuerySparqlServer {
 		
 		viewedTitles.forEach((movieTitle) -> {
 			Resource movie = movieFromTitle(movieTitle,"");
-			//if (movie==null) movie = movieFromTitle(movieTitle,"@BR"); //If doesnt find original title, try portuguese.
-			//if (movie==null) movie = movieFromTitle(movieTitle,"@US"); //If doesnt find portuguese, try english.
 			if (movie!=null) user.addProperty(propView, movie);
 		});
+		//m.write(System.out,"Turtle");
 		return m;
 	}
 	

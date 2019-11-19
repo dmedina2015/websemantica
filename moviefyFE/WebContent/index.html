@@ -2,6 +2,7 @@
 <html>
 <head lang="en">
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <link rel="stylesheet" type="text/css" href="css/main.css">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -21,13 +22,7 @@
   <div class="collapse navbar-collapse" id="main-navigation">
     <ul class="navbar-nav">
       <li class="nav-item">
-        <a class="nav-link" href="http://moviefy.ddns.net:8081/moviefyFE">Home</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">About</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">Contact</a>
+        <a class="nav-link" href="http://moviefy.ddns.net:8081/moviefy">Home</a>
       </li>
     </ul>
   </div>
@@ -40,12 +35,26 @@
 		  	<p>O Moviefy é seu consultor particular para a escolha de filmes. Através de seu histórico de visualizações do Netflix, ele irá inferir suas preferências e sugerir os filmes que provavelmente te deixarão grudado no sofá!</p>
 		  	<form action="upload" id="netflixForm" name="netflixForm" method="post" enctype="multipart/form-data">
 				<p>Selecione seu Histórico de Visualizações do Netflix e clique em Enviar:</p><input type="file" name="file" id="file" size="50"/> 
-				<input type="submit" id="btnSubmit" value="Enviar"/>
+				<input type="submit" class="btn btn-primary" id="btnSubmit" value="Enviar"/>
 		   	</form>
+		   	<br>
+		   	<p>
+			   	<button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapseHowTo" aria-expanded="false" aria-controls="collapseExample">
+			   	Ainda não tenho o arquivo
+			   	</button>
+		   	</p>
+		   	
+			<div class="collapse" id="collapseHowTo">
+	  			<div class="card card-body">
+	    		O arquivo da Netflix você pode conseguir acessando o link abaixo:<a href="https://www.netflix.com/viewingactivity/">Ver meu histórico da Netflix</a> Caso não esteja logado na página da Netflix, precisará logar e acessar novamente o link.
+	    		Logo em seguida você será levado para uma página contendo todo seu histórico de visualização, como na figura abaixo. Basta clicar no link "Baixar tudo" ao final da página e submeter o arquivo aqui no site. 
+	    		Fique tranquilo, nós não salvamos em nossos servidores nenhuma informação sua, muito menos seu arquivo de histórico.
+	    		<figure><img class="img" src="images/HistoricoNetflix.png"></figure>
+	    		
+	  			</div>
+			</div>
 		</div>
-		<div id="results">
-	
-		
+		<div id="results">	
 		</div>
 	</div>
 </header>
@@ -102,21 +111,21 @@
         });
     </script>
     
+    <script type="text/javascript">
+	$body = $("body");
+	
+	$(document).on({
+	    ajaxStart: function() { $body.addClass("loading");    },
+	     ajaxStop: function() { $body.removeClass("loading"); }    
+	});
+	
+	$(document).ready(function() {
+	    $('#submit_btn').click(function(){
+	        $(document).ajaxStart();
+	    });//end click
+	});//end rdy
+	</script>
     
-<script type="text/javascript">
-$body = $("body");
-
-$(document).on({
-    ajaxStart: function() { $body.addClass("loading");    },
-     ajaxStop: function() { $body.removeClass("loading"); }    
-});
-
-$(document).ready(function() {
-    $('#submit_btn').click(function(){
-        $(document).ajaxStart();
-    });//end click
-});//end rdy
-</script>
 <!-- <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script> -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>

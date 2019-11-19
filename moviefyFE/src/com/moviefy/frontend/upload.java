@@ -10,6 +10,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -109,7 +110,20 @@ public class upload extends HttpServlet {
         System.out.println("Query finished on " + formatter.format(new Date(System.currentTimeMillis())));
         System.out.println("Starting fetching images on " + formatter.format(new Date(System.currentTimeMillis())));
         
+        
+        
+        
         out.println("<div class=\"album py-5 bg-light\">");
+        out.println("<div class=\"center\"> <b>As recomendações de filmes que temos para você estão mostradas abaixo. </b><br>Depois não deixe de nos contar o que achou delas respondendo a 3 perguntas, não demora nem um minuto. \n"
+        		+ "  <br><button class=\"btn btn-primary\" type=\"button\" data-toggle=\"collapse\" data-target=\"#collapseExample\" aria-expanded=\"false\" aria-controls=\"collapseExample\">\n" + 
+        		"    Responder\n" + 
+        		"  </button>\n" +  
+        		"<div class=\"collapse\" id=\"collapseExample\">\n" + 
+        		"  <div class=\"card card-body\">\n" +
+        		"<iframe src=\"https://docs.google.com/forms/d/e/1FAIpQLSfB10e1laPVVMmCi6ux5Rwib6ozJImuL2bwHDBHB9-UnLTEgg/viewform?embedded=true\" width=\"640\" height=\"921\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\">Carregando…</iframe>" +
+        		"  </div>\n" + 
+        		"</div>"
+        		+ "</div>");
         out.println("<div class=\"container\">");
         out.println("<div class=\"row\">");
         
@@ -139,10 +153,6 @@ public class upload extends HttpServlet {
         	out.println("<div class=\"card-body\">");
         	out.println("<p class=\"card-text\">" + movieProps.get(0) + "<br>" + movieProps.get(1) + "<br>" + movieProps.get(3) + "</p>");
         	out.println("<div class=\"d-flex justify-content-between align-items-center\">");
-        	out.println("<div class=\"btn-group\">");
-        	out.println("<button type=\"button\" class=\"btn btn-sm btn-outline-secondary\">Ver</button>");
-        	out.println("<button type=\"button\" class=\"btn btn-sm btn-outline-secondary\">Editar</button>");
-        	out.println("</div>");
         	out.println("<small class=\"text-muted\">" + movieProps.get(2) + " mins</small>");
         	out.println("</div>");
         	out.println("</div>");
